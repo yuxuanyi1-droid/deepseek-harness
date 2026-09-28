@@ -1,4 +1,4 @@
-/** Signed GitHub HTTP adapter and GitHub App integration for the webhook and workspace runtime. */
+/** Signed GitHub HTTP adapter, GitHub App integration, and OpenSWE event automation workflow. */
 
 import type { Context } from '@deepseek-ai/cordis'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
@@ -10,6 +10,8 @@ import { GitHubAppService } from './github-app.ts'
 export type * from './types.ts'
 export { GitHubAppService } from './github-app.ts'
 export type { GitHubAppRepository, GitHubAppBranch, GitHubAppConfig } from './github-app.ts'
+export { handleGitHubSweEvent, isAgentTriggerMention, DEFAULT_BOT_TRIGGER_PATTERNS } from './swe-handler.ts'
+export type { GitHubSweEventTrigger } from './swe-handler.ts'
 
 /** Cordis function-plugin name. */
 export const name = 'webhook-github'
