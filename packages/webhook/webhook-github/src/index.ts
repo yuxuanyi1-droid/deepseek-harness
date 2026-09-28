@@ -1,12 +1,15 @@
-/** Signed GitHub HTTP adapter for the provider-neutral webhook runtime. */
+/** Signed GitHub HTTP adapter and GitHub App integration for the webhook and workspace runtime. */
 
 import type { Context } from '@deepseek-ai/cordis'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import z from '@deepseek-ai/schemastery'
 import { createGitHubWebhookHandler } from './handler.ts'
+import { GitHubAppService } from './github-app.ts'
 
 export type * from './types.ts'
+export { GitHubAppService } from './github-app.ts'
+export type { GitHubAppRepository, GitHubAppBranch, GitHubAppConfig } from './github-app.ts'
 
 /** Cordis function-plugin name. */
 export const name = 'webhook-github'
@@ -23,6 +26,10 @@ export interface Config {
   readonly secretEnv: string
   /** Positive raw body ceiling in bytes. */
   readonly maxBodyBytes: number
+  /** GitHub App ID for repository and branch workspace integration. */
+  readonly appId?: string
+  /** Environment variable containing GitHub App Private Key. */
+  readonly privateKeyEnv?: string
 }
 
 export const Config: z<Config> = z.object({
@@ -30,6 +37,8 @@ export const Config: z<Config> = z.object({
   path: z.string().required(),
   secretEnv: z.string().role('credential-ref').required(),
   maxBodyBytes: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).required(),
+  appId: z.string().default(''),
+  privateKeyEnv: z.string().default('GITHUB_APP_PRIVATE_KEY'),
 })
 
 /** Validate route and source facts that Schemastery cannot express. */
@@ -43,7 +52,7 @@ function assertConfig(config: Config): void {
   }
 }
 
-/** Register one signed GitHub endpoint on the injected WebServer. */
+/** Register one signed GitHub endpoint on the injected WebServer and mount GitHubAppService. */
 export function apply(ctx: Context, config: Config): void {
   assertConfig(config)
   const route = {
@@ -59,4 +68,9 @@ export function apply(ctx: Context, config: Config): void {
     () => ctx.webServer.register(route),
     `webhook-github: ${config.path}`,
   )
+
+  ctx.plugin(GitHubAppService, {
+    appId: config.appId ?? '',
+    privateKeyEnv: config.privateKeyEnv ?? 'GITHUB_APP_PRIVATE_KEY',
+  })
 }
